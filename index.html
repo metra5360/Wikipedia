@@ -382,7 +382,6 @@
         // -------------------------------------------------------------
         // SUPABASE КОНФІГУРАЦІЯ
         // -------------------------------------------------------------
-        // Введіть власні ключі Supabase URL та Anon Key нижче при потребі:
         const SUPABASE_URL = "https://jzjzrxvzxhwksstnwpqb.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_WF5uLS5JRDx7_4b4gaFhjQ_D0qZOo5S";
 
@@ -467,11 +466,9 @@
         }
 
         async function saveData() {
-            // Завжди зберігаємо локально для надійності
             localStorage.setItem('wiki_languages', JSON.stringify(state.languages));
             localStorage.setItem('wiki_articles', JSON.stringify(state.articles));
 
-            // Синхронізація з Supabase якщо активна БД
             if (isSupabaseActive && currentUser) {
                 try {
                     const { error } = await supabase
@@ -514,7 +511,6 @@
                     renderApp();
                     showToast("Синхронізовано з Supabase", "success");
                 } else {
-                    // Якщо запису немає, створюємо початковий
                     saveData();
                 }
             } catch (err) {
@@ -619,7 +615,6 @@
 
             const translation = article.translations[state.currentLang];
 
-            // Панель наявних перекладів
             const transListContainer = document.getElementById('translations-list');
             transListContainer.innerHTML = '';
             Object.keys(article.translations).forEach(code => {
@@ -780,11 +775,9 @@
                 return;
             }
 
-            if (confirm("Видалити цю статтю та всі її переклади?")) {
-                delete state.articles[state.currentArticleId];
-                saveData();
-                navigateTo('main_page');
-            }
+            delete state.articles[state.currentArticleId];
+            saveData();
+            navigateTo('main_page');
         };
 
         window.submitNewLanguage = function() {
@@ -818,30 +811,22 @@
                 return;
             }
 
-            const langObj = state.languages.find(l => l.code === code);
-            const langName = langObj ? langObj.name : code;
+            state.languages = state.languages.filter(l => l.code !== code);
 
-            if (confirm(`Ви дійсно бажаєте видалити мову "${langName}" (${code})? Усі переклади статей цією мовою будуть очищені.`)) {
-                // Видаляємо мову
-                state.languages = state.languages.filter(l => l.code !== code);
-
-                // Очищаємо переклади
-                Object.keys(state.articles).forEach(artId => {
-                    if (state.articles[artId].translations && state.articles[artId].translations[code]) {
-                        delete state.articles[artId].translations[code];
-                    }
-                });
-
-                // Фоллбек на базову мову
-                if (state.currentLang === code) {
-                    state.currentLang = 'uk';
+            Object.keys(state.articles).forEach(artId => {
+                if (state.articles[artId].translations && state.articles[artId].translations[code]) {
+                    delete state.articles[artId].translations[code];
                 }
+            });
 
-                saveData();
-                renderApp();
-                if (!document.getElementById('modal-manage-langs').classList.contains('hidden')) {
-                    renderManageLanguagesList();
-                }
+            if (state.currentLang === code) {
+                state.currentLang = 'uk';
+            }
+
+            saveData();
+            renderApp();
+            if (!document.getElementById('modal-manage-langs').classList.contains('hidden')) {
+                renderManageLanguagesList();
             }
         };
 
